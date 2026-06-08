@@ -1,0 +1,2597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta
+name="viewport"
+content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+<title>Kinetic Sports Arcade</title>
+
+<meta name="theme-color" content="#6fd8c0">
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+
+<style>
+
+:root{
+--seafoam:#6fd8c0;
+--seafoamDark:#44b49a;
+--white:#ffffff;
+--panel:#f8fbfc;
+--sky:#b9e7ff;
+--grass:#8ad28d;
+--danger:#ff5f5f;
+--warning:#ffd166;
+--shadow:0 12px 25px rgba(0,0,0,.18);
+--radius:18px;
+}
+
+*{
+box-sizing:border-box;
+margin:0;
+padding:0;
+font-family:Arial,Helvetica,sans-serif;
+}
+
+html,body{
+width:100%;
+height:100%;
+overflow:hidden;
+background:#b9e7ff;
+}
+
+#app{
+width:100%;
+height:100%;
+display:flex;
+}
+
+#gameContainer{
+flex:1;
+position:relative;
+overflow:hidden;
+}
+
+#threeCanvas{
+width:100%;
+height:100%;
+display:block;
+}
+
+#hud{
+position:absolute;
+top:12px;
+left:12px;
+right:12px;
+display:flex;
+gap:12px;
+z-index:20;
+pointer-events:none;
+}
+
+.panel{
+background:rgba(255,255,255,.95);
+border-radius:18px;
+padding:12px;
+box-shadow:var(--shadow);
+pointer-events:auto;
+}
+
+.scoreBox{
+min-width:180px;
+}
+
+.scoreRow{
+display:flex;
+justify-content:space-between;
+margin-bottom:6px;
+font-size:14px;
+}
+
+#motiveWrap{
+width:250px;
+}
+
+#motiveBar{
+height:18px;
+width:100%;
+border-radius:12px;
+background:#ccc;
+overflow:hidden;
+}
+
+#motiveFill{
+height:100%;
+width:100%;
+background:var(--seafoam);
+transition:.25s;
+}
+
+#modePanel{
+position:absolute;
+bottom:14px;
+left:14px;
+z-index:25;
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+}
+
+button{
+border:none;
+border-radius:14px;
+padding:10px 16px;
+cursor:pointer;
+font-weight:bold;
+background:var(--white);
+box-shadow:var(--shadow);
+}
+
+button:hover{
+transform:translateY(-2px);
+}
+
+.activeBtn{
+background:var(--seafoam);
+color:white;
+}
+
+#sidebar{
+width:340px;
+background:#ffffff;
+display:flex;
+flex-direction:column;
+border-left:4px solid var(--seafoam);
+z-index:50;
+}
+
+#shopHeader{
+padding:14px;
+font-size:20px;
+font-weight:bold;
+background:#eefdf8;
+border-bottom:1px solid #ddd;
+}
+
+#shopList{
+flex:1;
+overflow:auto;
+padding:10px;
+}
+
+.shopItem{
+padding:10px;
+margin-bottom:8px;
+border-radius:14px;
+background:#f7f7f7;
+}
+
+.shopTitle{
+font-weight:bold;
+margin-bottom:6px;
+}
+
+.rarityCommon{
+color:#666;
+}
+
+.rarityRare{
+color:#4ea3ff;
+}
+
+.rarityEpic{
+color:#9d63ff;
+}
+
+.rarityLegendary{
+color:#ff8f2d;
+}
+
+.shopRow{
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+#inventory{
+height:220px;
+overflow:auto;
+border-top:2px solid #eee;
+padding:10px;
+}
+
+.inventoryItem{
+background:#f3fffb;
+padding:8px;
+border-radius:12px;
+margin-bottom:6px;
+}
+
+#pauseOverlay{
+position:absolute;
+inset:0;
+display:none;
+align-items:center;
+justify-content:center;
+backdrop-filter:blur(12px);
+background:rgba(0,0,0,.35);
+z-index:200;
+}
+
+#pauseCard{
+background:white;
+padding:30px;
+border-radius:20px;
+width:320px;
+text-align:center;
+box-shadow:var(--shadow);
+}
+
+.pauseBtn{
+width:100%;
+margin-top:10px;
+}
+
+#webcam{
+position:absolute;
+right:12px;
+bottom:12px;
+width:260px;
+height:180px;
+object-fit:cover;
+border-radius:18px;
+border:3px solid white;
+z-index:40;
+background:black;
+}
+
+#statusText{
+position:absolute;
+top:90px;
+left:15px;
+z-index:30;
+background:white;
+padding:10px 14px;
+border-radius:12px;
+box-shadow:var(--shadow);
+font-weight:bold;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="app">
+
+<div id="gameContainer">
+
+<div id="hud">
+
+<div class="panel scoreBox">
+<div class="scoreRow">
+<span>User Team</span>
+<span id="userScore">0</span>
+</div>
+
+<div class="scoreRow">
+<span>AI Bots</span>
+<span id="aiScore">0</span>
+</div>
+
+<div class="scoreRow">
+<span>Simoleons</span>
+<span id="simoleons">500</span>
+</div>
+</div>
+
+<div class="panel" id="motiveWrap">
+
+<div style="margin-bottom:6px;">
+Engagement Status:
+<span id="effortLabel">SEAFOAM</span>
+</div>
+
+<div id="motiveBar">
+<div id="motiveFill"></div>
+</div>
+
+</div>
+
+</div>
+
+<div id="statusText">
+Select A Sport Mode
+</div>
+
+<div id="modePanel">
+
+<button class="modeBtn" data-mode="jogging">
+Extreme Jogging
+</button>
+
+<button class="modeBtn" data-mode="batting">
+Batting
+</button>
+
+<button class="modeBtn" data-mode="pitching">
+Pitching
+</button>
+
+<button class="modeBtn" data-mode="striker">
+Soccer Striker
+</button>
+
+<button class="modeBtn" data-mode="keeper">
+Soccer Keeper
+</button>
+
+<button class="modeBtn" data-mode="defense">
+Soccer Defense
+</button>
+
+<button class="modeBtn" data-mode="basketball">
+Basketball Court
+</button>
+
+<button class="modeBtn" data-mode="bdefense">
+Basketball Defense
+</button>
+
+<button class="modeBtn" data-mode="threepoint">
+3 Point Challenge
+</button>
+
+<button id="soloBtn">
+Solo
+</button>
+
+<button id="twoBtn">
+2v2
+</button>
+
+<button id="fourBtn">
+4 Player
+</button>
+
+<button id="aiToggle">
+AI ON
+</button>
+
+<button id="pauseButton">
+Pause
+</button>
+
+</div>
+
+<video
+id="webcam"
+autoplay
+playsinline
+muted>
+</video>
+
+<div id="pauseOverlay">
+
+<div id="pauseCard">
+
+<h2>Game Paused</h2>
+
+<button
+class="pauseBtn"
+id="resumeBtn">
+Resume
+</button>
+
+<button
+class="pauseBtn"
+id="resetBtn">
+Reset Match
+</button>
+
+</div>
+
+</div>
+
+<canvas id="threeCanvas"></canvas>
+
+</div>
+
+<div id="sidebar">
+
+<div id="shopHeader">
+Sports Buy Mode
+</div>
+
+<div id="shopList"></div>
+
+<div id="inventory"></div>
+
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+
+<script>
+
+let scene;
+let camera;
+let renderer;
+
+let running=true;
+
+let activeMode="jogging";
+
+let aiEnabled=true;
+
+let teamMode=1;
+
+let simoleons=500;
+
+let userScore=0;
+let aiScore=0;
+
+let playerColor="#6fd8c0";
+
+const avatars=[];
+const plumbobs=[];
+const grassLines=[];
+
+const inventory=[];
+
+const shopItems=[];
+
+const state={
+effort:1,
+streak:0,
+coinsMultiplier:1,
+elite:false
+};
+
+function speak(text,rate=1.1,pitch=1.2){
+
+speechSynthesis.cancel();
+
+const msg=
+new SpeechSynthesisUtterance(text);
+
+msg.rate=rate;
+msg.pitch=pitch;
+
+speechSynthesis.speak(msg);
+}
+
+function updateHUD(){
+
+userScoreEl.textContent=userScore;
+aiScoreEl.textContent=aiScore;
+simoleonsEl.textContent=simoleons;
+}
+
+const userScoreEl=
+document.getElementById("userScore");
+
+const aiScoreEl=
+document.getElementById("aiScore");
+
+const simoleonsEl=
+document.getElementById("simoleons");
+const motiveFill =
+document.getElementById("motiveFill");
+
+const effortLabel =
+document.getElementById("effortLabel");
+
+const statusText =
+document.getElementById("statusText");
+
+const shopList =
+document.getElementById("shopList");
+
+const inventoryPanel =
+document.getElementById("inventory");
+
+const pauseOverlay =
+document.getElementById("pauseOverlay");
+
+function initThree(){
+
+scene = new THREE.Scene();
+
+scene.background =
+new THREE.Color(0xb9e7ff);
+
+scene.fog =
+new THREE.FogExp2(
+0xb9e7ff,
+0.018
+);
+
+camera =
+new THREE.PerspectiveCamera(
+65,
+window.innerWidth /
+window.innerHeight,
+0.1,
+1000
+);
+
+camera.position.set(
+0,
+9,
+18
+);
+
+renderer =
+new THREE.WebGLRenderer({
+canvas:
+document.getElementById(
+"threeCanvas"
+),
+antialias:true
+});
+
+renderer.setPixelRatio(
+Math.min(
+window.devicePixelRatio,
+1.5
+)
+);
+
+renderer.setSize(
+window.innerWidth,
+window.innerHeight
+);
+
+const hemi =
+new THREE.HemisphereLight(
+0xffffff,
+0x88cc88,
+1.4
+);
+
+scene.add(hemi);
+
+const dir =
+new THREE.DirectionalLight(
+0xffffff,
+1
+);
+
+dir.position.set(
+10,
+20,
+10
+);
+
+scene.add(dir);
+
+createMovingTrack();
+createPlayers();
+createBots();
+
+window.addEventListener(
+"resize",
+onResize
+);
+}
+
+function onResize(){
+
+camera.aspect =
+window.innerWidth /
+window.innerHeight;
+
+camera.updateProjectionMatrix();
+
+renderer.setSize(
+window.innerWidth,
+window.innerHeight
+);
+
+}
+
+function createMovingTrack(){
+
+const material =
+new THREE.LineBasicMaterial({
+color:0x67c46c
+});
+
+for(
+let z=-100;
+z<100;
+z+=2
+){
+
+const points=[];
+
+points.push(
+new THREE.Vector3(
+-25,
+0,
+z
+)
+);
+
+points.push(
+new THREE.Vector3(
+25,
+0,
+z
+)
+);
+
+const geometry =
+new THREE.BufferGeometry()
+.setFromPoints(points);
+
+const line =
+new THREE.Line(
+geometry,
+material
+);
+
+scene.add(line);
+
+grassLines.push(line);
+
+}
+
+for(
+let x=-25;
+x<=25;
+x+=2
+){
+
+const points=[];
+
+points.push(
+new THREE.Vector3(
+x,
+0,
+-100
+)
+);
+
+points.push(
+new THREE.Vector3(
+x,
+0,
+100
+)
+);
+
+const geometry =
+new THREE.BufferGeometry()
+.setFromPoints(points);
+
+const line =
+new THREE.Line(
+geometry,
+material
+);
+
+scene.add(line);
+
+}
+
+}
+
+function createAvatar(
+x,
+z,
+color
+){
+
+const group =
+new THREE.Group();
+
+const wireMaterial =
+new THREE.MeshBasicMaterial({
+color:color,
+wireframe:true
+});
+
+const body =
+new THREE.Mesh(
+new THREE.BoxGeometry(
+1.2,
+2,
+0.8
+),
+wireMaterial
+);
+
+body.position.y=2;
+
+group.add(body);
+
+const head =
+new THREE.Mesh(
+new THREE.BoxGeometry(
+0.9,
+0.9,
+0.9
+),
+wireMaterial
+);
+
+head.position.y=3.6;
+
+group.add(head);
+
+const leftArm =
+new THREE.Mesh(
+new THREE.BoxGeometry(
+0.35,
+1.5,
+0.35
+),
+wireMaterial
+);
+
+leftArm.position.set(
+-1,
+2,
+0
+);
+
+group.add(leftArm);
+
+const rightArm =
+new THREE.Mesh(
+new THREE.BoxGeometry(
+0.35,
+1.5,
+0.35
+),
+wireMaterial
+);
+
+rightArm.position.set(
+1,
+2,
+0
+);
+
+group.add(rightArm);
+
+const leftLeg =
+new THREE.Mesh(
+new THREE.BoxGeometry(
+0.4,
+1.8,
+0.4
+),
+wireMaterial
+);
+
+leftLeg.position.set(
+-0.4,
+0.7,
+0
+);
+
+group.add(leftLeg);
+
+const rightLeg =
+new THREE.Mesh(
+new THREE.BoxGeometry(
+0.4,
+1.8,
+0.4
+),
+wireMaterial
+);
+
+rightLeg.position.set(
+0.4,
+0.7,
+0
+);
+
+group.add(rightLeg);
+
+group.position.set(
+x,
+0,
+z
+);
+
+group.userData={
+material:wireMaterial,
+leftArm,
+rightArm,
+leftLeg,
+rightLeg
+};
+
+scene.add(group);
+
+const plumbob =
+createPlumbob();
+
+group.add(plumbob);
+
+plumbobs.push(plumbob);
+
+return group;
+
+}
+
+function createPlumbob(){
+
+const geo =
+new THREE.OctahedronGeometry(
+0.45
+);
+
+const mat =
+new THREE.MeshStandardMaterial({
+color:0x00ff66
+});
+
+const mesh =
+new THREE.Mesh(
+geo,
+mat
+);
+
+mesh.position.y=5;
+
+return mesh;
+
+}
+
+function createPlayers(){
+
+avatars.push(
+createAvatar(
+-6,
+0,
+0x6fd8c0
+)
+);
+
+avatars.push(
+createAvatar(
+-2,
+0,
+0x6fd8c0
+)
+);
+
+avatars.push(
+createAvatar(
+2,
+0,
+0x6fd8c0
+)
+);
+
+avatars.push(
+createAvatar(
+6,
+0,
+0x6fd8c0
+)
+);
+
+}
+
+function createBots(){
+
+for(
+let i=0;
+i<2;
+i++
+){
+
+const bot=
+createAvatar(
+-3 + i*6,
+-10,
+0xff6666
+);
+
+bot.userData.bot=true;
+
+avatars.push(bot);
+
+}
+
+}
+
+function recolorMainPlayer(
+hex
+){
+
+playerColor=hex;
+
+const avatar=
+avatars[0];
+
+if(!avatar) return;
+
+avatar.userData
+.material
+.color
+.set(hex);
+
+}
+
+function updateTrack(){
+
+if(
+activeMode!=="jogging"
+) return;
+
+for(
+const line of grassLines
+){
+
+line.position.z+=0.35;
+
+if(
+line.position.z>4
+){
+
+line.position.z=-4;
+
+}
+
+}
+
+}
+
+function animatePlayers(){
+
+const t=
+performance.now()*
+0.003;
+
+avatars.forEach(
+(a,index)=>{
+
+if(
+a.userData.bot
+){
+
+a.position.x=
+Math.sin(
+t+index
+)*8;
+
+}
+
+a.rotation.y=
+Math.sin(
+t+index
+)*0.2;
+
+});
+
+}
+
+function animatePlumbobs(){
+
+plumbobs.forEach(
+p=>{
+
+p.rotation.y+=0.06;
+
+p.position.y=
+5+
+Math.sin(
+performance.now()
+*0.004
+)*0.15;
+
+});
+
+}
+
+function updateMotive(){
+
+const e=
+state.effort;
+
+motiveFill.style.width=
+Math.floor(
+e*100
+)+"%";
+
+if(e<0.25){
+
+motiveFill.style.background=
+"#ff5f5f";
+
+effortLabel.textContent=
+"CRITICAL";
+
+state.coinsMultiplier=
+0.2;
+
+}
+
+else if(e<0.6){
+
+motiveFill.style.background=
+"#ffd166";
+
+effortLabel.textContent=
+"ACTIVE";
+
+state.coinsMultiplier=
+1;
+
+}
+
+else{
+
+motiveFill.style.background=
+"#6fd8c0";
+
+effortLabel.textContent=
+"ELITE";
+
+state.coinsMultiplier=
+2;
+
+}
+
+}
+
+function togglePause(){
+
+running=!running;
+
+pauseOverlay.style.display=
+running
+? "none"
+: "flex";
+
+if(running){
+
+animate();
+
+}
+
+}
+
+document
+.getElementById(
+"pauseButton"
+)
+.onclick=
+togglePause;
+
+document
+.getElementById(
+"resumeBtn"
+)
+.onclick=
+togglePause;
+
+document
+.getElementById(
+"resetBtn"
+)
+.onclick=
+()=>{
+
+userScore=0;
+aiScore=0;
+state.streak=0;
+
+updateHUD();
+
+};
+
+window.addEventListener(
+"keydown",
+e=>{
+
+if(
+e.key==="Escape" ||
+e.key==="p" ||
+e.key==="P"
+){
+
+togglePause();
+
+}
+
+}
+);
+
+function animate(){
+
+if(!running) return;
+
+requestAnimationFrame(
+animate
+);
+
+updateTrack();
+animatePlayers();
+animatePlumbobs();
+updateMotive();
+
+renderer.render(
+scene,
+camera
+);
+
+}
+
+initThree();
+
+animate();/* =========================================================
+   PART 3
+   MEDIAPIPE + EFFORT TRACKING + MODE SYSTEM
+========================================================= */
+
+let pose;
+
+let latestPose=null;
+
+let lastHipY=0;
+let lastWristY=0;
+let lastShoulderSpan=0;
+
+let tutorialMode=true;
+
+let aiLoop=null;
+
+const webcam =
+document.getElementById("webcam");
+
+async function startCamera(){
+
+try{
+
+const stream =
+await navigator.mediaDevices.getUserMedia({
+video:{
+width:640,
+height:480
+},
+audio:false
+});
+
+webcam.srcObject=stream;
+
+setupPose();
+
+}
+catch(err){
+
+console.error(err);
+
+statusText.textContent=
+"Camera Permission Required";
+
+}
+
+}
+
+function setupPose(){
+
+pose = new Pose({
+
+locateFile:(file)=>{
+
+return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
+
+}
+
+});
+
+pose.setOptions({
+
+modelComplexity:1,
+smoothLandmarks:true,
+enableSegmentation:false,
+smoothSegmentation:false,
+minDetectionConfidence:0.5,
+minTrackingConfidence:0.5
+
+});
+
+pose.onResults(onPoseResults);
+
+const cameraFeed =
+new Camera(
+webcam,
+{
+onFrame:async()=>{
+
+await pose.send({
+image:webcam
+});
+
+},
+width:640,
+height:480
+}
+);
+
+cameraFeed.start();
+
+}
+
+function onPoseResults(results){
+
+if(
+!results.poseLandmarks
+) return;
+
+latestPose=
+results.poseLandmarks;
+
+evaluateEffort();
+
+handleCurrentMode();
+
+}
+
+function landmark(id){
+
+if(
+!latestPose
+) return null;
+
+return latestPose[id];
+
+}
+
+function distance(a,b){
+
+const dx=a.x-b.x;
+const dy=a.y-b.y;
+
+return Math.sqrt(
+dx*dx + dy*dy
+);
+
+}
+
+function evaluateEffort(){
+
+const leftShoulder =
+landmark(11);
+
+const rightShoulder =
+landmark(12);
+
+const leftWrist =
+landmark(15);
+
+const rightWrist =
+landmark(16);
+
+const leftHip =
+landmark(23);
+
+const rightHip =
+landmark(24);
+
+if(
+!leftShoulder ||
+!rightShoulder ||
+!leftWrist ||
+!rightWrist ||
+!leftHip ||
+!rightHip
+) return;
+
+const shoulderSpan =
+distance(
+leftShoulder,
+rightShoulder
+);
+
+const avgHipY =
+(
+leftHip.y +
+rightHip.y
+)*0.5;
+
+const avgWristY =
+(
+leftWrist.y +
+rightWrist.y
+)*0.5;
+
+const hipVelocity =
+Math.abs(
+avgHipY -
+lastHipY
+);
+
+const wristVelocity =
+Math.abs(
+avgWristY -
+lastWristY
+);
+
+const spanChange =
+Math.abs(
+shoulderSpan -
+lastShoulderSpan
+);
+
+lastHipY=avgHipY;
+lastWristY=avgWristY;
+lastShoulderSpan=
+shoulderSpan;
+
+let effort =
+0;
+
+effort +=
+Math.min(
+hipVelocity*20,
+0.5
+);
+
+effort +=
+Math.min(
+wristVelocity*20,
+0.5
+);
+
+effort +=
+Math.min(
+spanChange*8,
+0.3
+);
+
+effort +=
+Math.min(
+shoulderSpan,
+0.5
+);
+
+state.effort=
+Math.max(
+0,
+Math.min(
+1,
+effort
+)
+);
+
+if(
+state.effort>0.75
+){
+
+grantEliteBonus();
+
+}
+
+}
+
+function grantEliteBonus(){
+
+if(
+Math.random()>0.98
+){
+
+simoleons += 200;
+
+updateHUD();
+
+statusText.textContent=
+"ELITE BONUS +200";
+
+}
+
+}
+
+function handleCurrentMode(){
+
+if(
+!latestPose
+) return;
+
+switch(activeMode){
+
+case "jogging":
+handleJogging();
+break;
+
+case "batting":
+handleBatting();
+break;
+
+case "pitching":
+handlePitching();
+break;
+
+case "striker":
+handleSoccerStrike();
+break;
+
+case "keeper":
+handleKeeper();
+break;
+
+case "defense":
+handleSoccerDefense();
+break;
+
+case "basketball":
+handleBasketballDunk();
+break;
+
+case "bdefense":
+handleBasketballDefense();
+break;
+
+case "threepoint":
+handleThreePoint();
+break;
+
+}
+
+}
+
+/* ==========================
+   SPORTS MODES
+========================== */
+
+function rewardPoints(
+score,
+coins
+){
+
+userScore += score;
+
+simoleons += Math.floor(
+coins *
+state.coinsMultiplier
+);
+
+updateHUD();
+
+}
+
+function handleJogging(){
+
+const leftKnee =
+landmark(25);
+
+const rightKnee =
+landmark(26);
+
+if(
+!leftKnee ||
+!rightKnee
+) return;
+
+const kneeLift =
+Math.abs(
+leftKnee.y -
+rightKnee.y
+);
+
+if(
+kneeLift > 0.08
+){
+
+rewardPoints(
+1,
+2
+);
+
+}
+
+}
+
+function handleBatting(){
+
+const leftWrist =
+landmark(15);
+
+const rightWrist =
+landmark(16);
+
+if(
+!leftWrist ||
+!rightWrist
+) return;
+
+const spread =
+Math.abs(
+leftWrist.x -
+rightWrist.x
+);
+
+if(
+spread > 0.40
+){
+
+rewardPoints(
+25,
+30
+);
+
+statusText.textContent=
+"HOME RUN";
+
+}
+
+}
+
+function handlePitching(){
+
+const rightWrist=
+landmark(16);
+
+const rightShoulder=
+landmark(12);
+
+if(
+!rightWrist ||
+!rightShoulder
+) return;
+
+if(
+rightWrist.y <
+rightShoulder.y - 0.12
+){
+
+rewardPoints(
+15,
+15
+);
+
+statusText.textContent=
+"FASTBALL";
+
+}
+
+}
+
+function handleSoccerStrike(){
+
+const rightAnkle=
+landmark(28);
+
+const rightHip=
+landmark(24);
+
+if(
+!rightAnkle ||
+!rightHip
+) return;
+
+if(
+rightAnkle.y <
+rightHip.y
+){
+
+rewardPoints(
+20,
+25
+);
+
+statusText.textContent=
+"GOAL";
+
+}
+
+}
+
+function handleKeeper(){
+
+const nose=
+landmark(0);
+
+if(!nose) return;
+
+avatars[0].position.x=
+(nose.x-0.5)*20;
+
+}
+
+function handleSoccerDefense(){
+
+const nose=
+landmark(0);
+
+if(!nose) return;
+
+avatars[0].position.x=
+(nose.x-0.5)*16;
+
+rewardPoints(
+1,
+1
+);
+
+}
+
+function handleBasketballDunk(){
+
+const leftWrist=
+landmark(15);
+
+const rightWrist=
+landmark(16);
+
+const nose=
+landmark(0);
+
+if(
+!leftWrist ||
+!rightWrist ||
+!nose
+) return;
+
+if(
+leftWrist.y <
+nose.y &&
+rightWrist.y <
+nose.y
+){
+
+rewardPoints(
+50,
+50
+);
+
+statusText.textContent=
+"TOMAHAWK DUNK";
+
+avatars[0].scale.y=
+1.25;
+
+setTimeout(()=>{
+
+avatars[0].scale.y=1;
+
+},250);
+
+}
+
+}
+
+function handleBasketballDefense(){
+
+const nose=
+landmark(0);
+
+if(!nose) return;
+
+avatars[0].position.x=
+(nose.x-0.5)*18;
+
+}
+
+let userThreeStreak=0;
+let aiThreeStreak=0;
+
+function handleThreePoint(){
+
+const leftWrist=
+landmark(15);
+
+const rightWrist=
+landmark(16);
+
+const nose=
+landmark(0);
+
+if(
+!leftWrist ||
+!rightWrist ||
+!nose
+) return;
+
+if(
+leftWrist.y <
+nose.y &&
+rightWrist.y <
+nose.y
+){
+
+userThreeStreak++;
+
+rewardPoints(
+3,
+15
+);
+
+statusText.textContent=
+"3PT STREAK: " +
+userThreeStreak;
+
+if(
+userThreeStreak>=10
+){
+
+statusText.textContent=
+"PLAYER WINS";
+
+speak(
+"Player wins the challenge",
+1.25,
+1.7
+);
+
+}
+
+}
+
+}
+
+/* ==========================
+   SPEECH SYSTEM
+========================== */
+
+function coachSpeech(){
+
+speak(
+"Stand clear of obstacles. Practice the movement pattern for the selected sport.",
+0.95,
+1.0
+);
+
+}
+
+function announcerSpeech(){
+
+let msg =
+`User score ${userScore}.
+AI score ${aiScore}.
+Effort level ${effortLabel.textContent}.`;
+
+speak(
+msg,
+1.15,
+1.7
+);
+
+}
+
+setInterval(()=>{
+
+if(
+tutorialMode
+){
+
+coachSpeech();
+
+}
+else{
+
+announcerSpeech();
+
+}
+
+},30000);
+
+/* ==========================
+   MODE BUTTONS
+========================== */
+
+document
+.querySelectorAll(".modeBtn")
+.forEach(btn=>{
+
+btn.addEventListener(
+"click",
+()=>{
+
+document
+.querySelectorAll(".modeBtn")
+.forEach(
+b=>b.classList.remove(
+"activeBtn"
+)
+);
+
+btn.classList.add(
+"activeBtn"
+);
+
+activeMode =
+btn.dataset.mode;
+
+tutorialMode=true;
+
+statusText.textContent=
+"Tutorial Mode";
+
+speak(
+`${activeMode} selected`
+);
+
+setTimeout(()=>{
+
+tutorialMode=false;
+
+statusText.textContent=
+"Match Live";
+
+speak(
+"Match live. Begin movement.",
+1.2,
+1.8
+);
+
+},5000);
+
+});
+
+});
+
+document
+.getElementById("soloBtn")
+.onclick=()=>{
+
+teamMode=1;
+
+statusText.textContent=
+"Solo Practice";
+
+};
+
+document
+.getElementById("twoBtn")
+.onclick=()=>{
+
+teamMode=2;
+
+statusText.textContent=
+"2 Versus 2";
+
+};
+
+document
+.getElementById("fourBtn")
+.onclick=()=>{
+
+teamMode=4;
+
+statusText.textContent=
+"4 Player Grid";
+
+};
+
+document
+.getElementById("aiToggle")
+.onclick=()=>{
+
+aiEnabled=!aiEnabled;
+
+document
+.getElementById("aiToggle")
+.textContent=
+aiEnabled
+? "AI ON"
+: "AI OFF";
+
+};
+
+/* ==========================
+   AI SCORE LOOP
+========================== */
+
+function startAISystem(){
+
+if(aiLoop){
+
+clearInterval(aiLoop);
+
+}
+
+aiLoop=
+setInterval(()=>{
+
+if(
+!running ||
+!aiEnabled
+) return;
+
+const gain=
+Math.random() > 0.55;
+
+if(gain){
+
+aiScore++;
+
+updateHUD();
+
+}
+
+if(
+activeMode==="threepoint"
+){
+
+if(
+Math.random()>0.4
+){
+
+aiThreeStreak++;
+
+}
+else{
+
+aiThreeStreak=0;
+
+}
+
+if(
+aiThreeStreak>=10
+){
+
+statusText.textContent=
+"AI WINS";
+
+}
+
+}
+
+},1800);
+
+}
+
+startAISystem();
+
+startCamera();/* =========================================================
+   PART 4
+   SHOP + INVENTORY + PWA + SAVE SYSTEM
+========================================================= */
+
+const rarityTable=[
+"Common",
+"Rare",
+"Epic",
+"Legendary"
+];
+
+const colors=[
+"Teal",
+"Coral",
+"Seafoam"
+];
+
+const modifiers=[
+"Pro",
+"Deluxe",
+"Resort",
+"Cyber"
+];
+
+const gearTypes=[
+"Sneakers",
+"Jersey",
+"Socks"
+];
+
+const colorHex={
+Teal:"#20c5c5",
+Coral:"#ff7f6b",
+Seafoam:"#6fd8c0"
+};
+
+function rarityColor(r){
+
+switch(r){
+
+case "Rare":
+return "rarityRare";
+
+case "Epic":
+return "rarityEpic";
+
+case "Legendary":
+return "rarityLegendary";
+
+default:
+return "rarityCommon";
+
+}
+
+}
+
+function generateShop(){
+
+let counter=0;
+
+while(counter<3000){
+
+const modifier=
+modifiers[
+Math.floor(
+Math.random()*modifiers.length
+)
+];
+
+const color=
+colors[
+Math.floor(
+Math.random()*colors.length
+)
+];
+
+const gear=
+gearTypes[
+Math.floor(
+Math.random()*gearTypes.length
+)
+];
+
+let rarity;
+
+const roll=Math.random();
+
+if(roll>0.98){
+
+rarity="Legendary";
+
+}
+else if(roll>0.90){
+
+rarity="Epic";
+
+}
+else if(roll>0.70){
+
+rarity="Rare";
+
+}
+else{
+
+rarity="Common";
+
+}
+
+const itemName=
+modifier+
+" "+
+color+
+" "+
+gear+
+" #"+
+(counter+1);
+
+const price=
+Math.min(
+10000,
+50 +
+(counter*3)
+);
+
+shopItems.push({
+
+id:counter,
+
+name:itemName,
+
+rarity,
+
+price,
+
+owned:false,
+
+color
+
+});
+
+counter++;
+
+}
+
+renderShop();
+
+}
+
+function renderShop(){
+
+shopList.innerHTML="";
+
+for(
+let i=0;
+i<shopItems.length;
+i++
+){
+
+const item=
+shopItems[i];
+
+const card=
+document.createElement("div");
+
+card.className=
+"shopItem";
+
+card.innerHTML=
+`
+<div class="shopTitle ${rarityColor(item.rarity)}">
+${item.name}
+</div>
+
+<div class="shopRow">
+
+<span>
+§${item.price}
+</span>
+
+<button id="buy_${item.id}">
+${item.owned ? "OWNED" : "BUY"}
+</button>
+
+</div>
+`;
+
+shopList.appendChild(card);
+
+const btn=
+card.querySelector(
+"#buy_"+item.id
+);
+
+btn.onclick=()=>{
+
+buyItem(item);
+
+};
+
+}
+
+}
+
+function buyItem(item){
+
+if(item.owned){
+
+return;
+
+}
+
+if(
+simoleons <
+item.price
+){
+
+statusText.textContent=
+"Not Enough Simoleons";
+
+return;
+
+}
+
+simoleons -= item.price;
+
+item.owned=true;
+
+inventory.push(item);
+
+updateHUD();
+
+renderInventory();
+
+renderShop();
+
+speak(
+"Purchase successful"
+);
+
+}
+
+function renderInventory(){
+
+inventoryPanel.innerHTML=
+"<h3>Active Equipment Storage Closet</h3>";
+
+inventory.forEach(item=>{
+
+const div=
+document.createElement("div");
+
+div.className=
+"inventoryItem";
+
+div.innerHTML=
+`
+<div>
+${item.name}
+</div>
+
+<button>
+EQUIP
+</button>
+`;
+
+const equip=
+div.querySelector(
+"button"
+);
+
+equip.onclick=()=>{
+
+equipItem(item);
+
+};
+
+inventoryPanel.appendChild(div);
+
+});
+
+}
+
+function equipItem(item){
+
+const hex=
+colorHex[item.color];
+
+recolorMainPlayer(hex);
+
+statusText.textContent=
+"Equipped "+item.name;
+
+speak(
+"Equipment applied"
+);
+
+saveGame();
+
+}
+
+generateShop();
+
+/* =========================================================
+   LOCAL SAVE SYSTEM
+========================================================= */
+
+function saveGame(){
+
+const save={
+
+simoleons,
+
+userScore,
+
+aiScore,
+
+inventory,
+
+playerColor
+
+};
+
+localStorage.setItem(
+"KineticSportsSave",
+JSON.stringify(save)
+);
+
+}
+
+function loadGame(){
+
+const raw=
+localStorage.getItem(
+"KineticSportsSave"
+);
+
+if(!raw){
+
+return;
+
+}
+
+try{
+
+const save=
+JSON.parse(raw);
+
+simoleons=
+save.simoleons || 500;
+
+userScore=
+save.userScore || 0;
+
+aiScore=
+save.aiScore || 0;
+
+if(save.playerColor){
+
+recolorMainPlayer(
+save.playerColor
+);
+
+}
+
+if(save.inventory){
+
+save.inventory.forEach(i=>{
+
+inventory.push(i);
+
+});
+
+renderInventory();
+
+}
+
+updateHUD();
+
+}
+catch(e){
+
+console.log(e);
+
+}
+
+}
+
+loadGame();
+
+setInterval(
+saveGame,
+10000
+);
+
+/* =========================================================
+   PLAYER GRID PARTITIONING
+========================================================= */
+
+function getPlayerZone(x){
+
+if(x<0.25){
+
+return 1;
+
+}
+
+if(x<0.50){
+
+return 2;
+
+}
+
+if(x<0.75){
+
+return 3;
+
+}
+
+return 4;
+
+}
+
+function updateGridPlayers(){
+
+const nose=
+landmark(0);
+
+if(!nose){
+
+return;
+
+}
+
+const zone=
+getPlayerZone(
+nose.x
+);
+
+statusText.textContent=
+"Detected Player Zone "+zone;
+
+}
+
+setInterval(
+updateGridPlayers,
+500
+);
+
+/* =========================================================
+   PWA REGISTRATION
+========================================================= */
+
+if(
+"serviceWorker"
+in navigator
+){
+
+window.addEventListener(
+"load",
+()=>{
+
+navigator
+.serviceWorker
+.register(
+"./sw.js"
+)
+.catch(
+err=>console.log(err)
+);
+
+}
+);
+
+}
+
+/* =========================================================
+   INSTALL PROMPT
+========================================================= */
+
+let deferredPrompt;
+
+window.addEventListener(
+"beforeinstallprompt",
+(e)=>{
+
+e.preventDefault();
+
+deferredPrompt=e;
+
+console.log(
+"PWA Ready"
+);
+
+}
+);/* =========================================================
+   PART 5
+   GAME OBJECTS + FINAL LOOP + CLEANUP
+========================================================= */
+
+let soccerBall;
+let basketball;
+let baseball;
+
+function createBalls(){
+
+const ballGeo =
+new THREE.SphereGeometry(0.4,16,16);
+
+const ballMat =
+new THREE.MeshStandardMaterial({
+color:0xffffff
+});
+
+soccerBall =
+new THREE.Mesh(ballGeo,ballMat);
+
+soccerBall.position.set(0,1,-5);
+
+scene.add(soccerBall);
+
+basketball =
+new THREE.Mesh(
+new THREE.SphereGeometry(0.45,16,16),
+new THREE.MeshStandardMaterial({
+color:0xff8800
+})
+);
+
+basketball.position.set(2,1,-6);
+
+scene.add(basketball);
+
+baseball =
+new THREE.Mesh(
+new THREE.SphereGeometry(0.25,12,12),
+new THREE.MeshStandardMaterial({
+color:0xf5f5f5
+})
+);
+
+baseball.position.set(-2,1,-6);
+
+scene.add(baseball);
+
+}
+
+function animateBalls(){
+
+if(!soccerBall) return;
+
+soccerBall.position.y =
+1 + Math.sin(Date.now()*0.003)*0.3;
+
+basketball.position.y =
+1 + Math.sin(Date.now()*0.004)*0.25;
+
+baseball.position.y =
+1 + Math.sin(Date.now()*0.005)*0.2;
+
+}
+
+function rewardStreakBonus(){
+
+if(userScore>0 && userScore % 50 === 0){
+
+simoleons += 100;
+
+statusText.textContent =
+"STREAK BONUS +100";
+
+updateHUD();
+
+}
+
+}
+
+function clampPlayer(){
+
+const p = avatars[0];
+
+if(!p) return;
+
+p.position.x =
+Math.max(-10,Math.min(10,p.position.x));
+
+p.position.z =
+Math.max(-10,Math.min(10,p.position.z));
+
+}
+
+/* =========================================================
+   FINAL LOOP EXTENSION
+========================================================= */
+
+const oldAnimate = animate;
+
+animate = function(){
+
+if(!running) return;
+
+requestAnimationFrame(animate);
+
+updateTrack();
+animatePlayers();
+animatePlumbobs();
+animateBalls();
+updateMotive();
+rewardStreakBonus();
+clampPlayer();
+
+renderer.render(scene,camera);
+
+};
+
+createBalls();
+
+/* =========================================================
+   FINAL SAFE INIT
+========================================================= */
+
+window.addEventListener("load",()=>{
+
+statusText.textContent =
+"Camera Starting...";
+
+startCamera();
+
+generateShop();
+
+loadGame();
+
+});
+
+/* =========================================================
+   OPTIONAL MANIFEST HELPER (INLINE GUIDE)
+   (You still create manifest.json on Netlify)
+========================================================= */
+
+console.log("Game Ready for Netlify Deploy");
+
+/* =========================================================
+   END OF FILE
+========================================================= */
